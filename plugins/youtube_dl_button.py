@@ -3,18 +3,26 @@
 # (c) Shrimadhav U K
 
 # the logging things
+from helper_funcs.help_Nekmo_ffmpeg import generate_screen_shots
+from PIL import Image
+from hachoir.parser import createParser
+from hachoir.metadata import extractMetadata
+from helper_funcs.display_progress import progress_for_pyrogram, humanbytes
+from helper_funcs.chat_base import TRChatBase
+import pyrogram
+from translation import Translation
+from datetime import datetime
+import time
+import shutil
+import os
+import math
+import json
+import asyncio
 import logging
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-import asyncio
-import json
-import math
-import os
-import shutil
-import time
-from datetime import datetime
 
 # the secret configuration specific things
 if bool(os.environ.get("WEBHOOK", False)):
@@ -23,18 +31,10 @@ else:
     from config import Config
 
 # the Strings used for this "thing"
-from translation import Translation
 
-import pyrogram
 logging.getLogger("pyrogram").setLevel(logging.WARNING)
 
-from helper_funcs.chat_base import TRChatBase
-from helper_funcs.display_progress import progress_for_pyrogram, humanbytes
-from hachoir.metadata import extractMetadata
-from hachoir.parser import createParser
 # https://stackoverflow.com/a/37631799/4723940
-from PIL import Image
-from helper_funcs.help_Nekmo_ffmpeg import generate_screen_shots
 
 
 async def youtube_dl_call_back(bot, update):
@@ -106,7 +106,8 @@ async def youtube_dl_call_back(bot, update):
     if "fulltitle" in response_json:
         description = response_json["fulltitle"][0:1021]
         # escape Markdown and special characters
-    tmp_directory_for_each_user = Config.DOWNLOAD_LOCATION + "/" + str(update.from_user.id)
+    tmp_directory_for_each_user = Config.DOWNLOAD_LOCATION + \
+        "/" + str(update.from_user.id)
     if not os.path.isdir(tmp_directory_for_each_user):
         os.makedirs(tmp_directory_for_each_user)
     download_directory = tmp_directory_for_each_user + "/" + custom_file_name
@@ -175,18 +176,20 @@ async def youtube_dl_call_back(bot, update):
         # logger.info(t_response)
         os.remove(save_ytdl_json_path)
         end_one = datetime.now()
-        time_taken_for_download = (end_one -start).seconds
+        time_taken_for_download = (end_one - start).seconds
         file_size = Config.TG_MAX_FILE_SIZE + 1
         try:
             file_size = os.stat(download_directory).st_size
         except FileNotFoundError as exc:
-            download_directory = os.path.splitext(download_directory)[0] + "." + "mkv"
+            download_directory = os.path.splitext(
+                download_directory)[0] + "." + "mkv"
             # https://stackoverflow.com/a/678242/4723940
             file_size = os.stat(download_directory).st_size
         if file_size > Config.TG_MAX_FILE_SIZE:
             await bot.edit_message_text(
                 chat_id=update.message.chat.id,
-                text=Translation.RCHD_TG_API_LIMIT.format(time_taken_for_download, humanbytes(file_size)),
+                text=Translation.RCHD_TG_API_LIMIT.format(
+                    time_taken_for_download, humanbytes(file_size)),
                 message_id=update.message.message_id
             )
         else:
@@ -324,7 +327,7 @@ async def youtube_dl_call_back(bot, update):
                 i = 0
                 caption = "© @AnyDLBot"
                 if is_w_f:
-                    caption = "/upgrade to Plan D to remove the watermark\n© @AnyDLBot"
+                    caption = "/upgrade to Plan D to remove the watermark."
                 for image in images:
                     if os.path.exists(image):
                         if i == 0:
@@ -355,7 +358,8 @@ async def youtube_dl_call_back(bot, update):
             except:
                 pass
             await bot.edit_message_text(
-                text=Translation.AFTER_SUCCESSFUL_UPLOAD_MSG_WITH_TS.format(time_taken_for_download, time_taken_for_upload),
+                text=Translation.AFTER_SUCCESSFUL_UPLOAD_MSG_WITH_TS.format(
+                    time_taken_for_download, time_taken_for_upload),
                 chat_id=update.message.chat.id,
                 message_id=update.message.message_id,
                 disable_web_page_preview=True
